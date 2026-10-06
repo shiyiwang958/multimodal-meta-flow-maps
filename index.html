@@ -105,6 +105,7 @@ a:hover { text-decoration-thickness: 2px; }
 /* one column for everything */
 .col { max-width: var(--col); margin-inline: auto; width: 100%; }
 section { padding-block: 2.75rem 0; }
+main { display: block; padding-bottom: clamp(3rem, 7vw, 5rem); }
 .stack { display: flex; flex-direction: column; gap: 1rem; }
 .stack > * { margin: 0; min-width: 0; }
 
@@ -375,14 +376,6 @@ footer h3 { font-size: 0.9rem; }
 </section>
 
 </main>
-
-<footer>
-  <div class="col">
-    <h3>Acknowledgments</h3>
-    <p>UU and SW contributed equally and agreed their name may be exchanged. UU and BK acknowledge support from the NSF through the Harvard University MRSEC Grant No. DMR-2011754 and the NSF Harnessing the Data Revolution Big Idea under Grant No. 2118201. SW is supported by a Kempner Graduate Fellowship. MSA and SW are also supported by the NSF under Cooperative Agreement PHY-2525568 (<a href="http://iaifi.org/" rel="noopener">IAIFI</a>). This work was made possible in part by a gift from the Chan Zuckerberg Initiative Foundation to establish the Kempner Institute. We thank Peter Potaptchik, Peter Holderrieth, Adhi Saravanan, Keith Matanachai and Donghae Lee for discussions.</p>
-    <p class="contact"><span>ulrikunneberg@g.harvard.edu</span><span>fwang@math.harvard.edu</span></p>
-  </div>
-</footer>
 
 <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js" integrity="sha384-XjKyOOlGwcjNTAIQHIpgOno0Hl1YQqzUOEleOLALmuqehneUG+vnGctmUb0ZY0l8" crossorigin="anonymous"></script>
 <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js" integrity="sha384-+VBxd3r6XgURycqtZ117nYw44OOcIax56Z4dCRWbxyPt0Koah1uHoK0o4+/RRE05" crossorigin="anonymous"></script>
