@@ -1,0 +1,852 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Multimodal Meta Flow Maps</title>
+<meta name="description" content="Scalable inference-time steering in biological design with multimodal Meta Flow Maps: one reward-independent flow map per base generator steers DNA sequences and 3D molecules toward target properties.">
+<meta name="author" content="Ulrik Unneberg, Shiyi Wang, Dinko Franceschi, Ziyu Xiong, Boris Kozinsky, Ellen D. Zhong, Michael S. Albergo">
+<meta name="color-scheme" content="light dark">
+
+<!-- Social preview. Crawlers need an absolute URL, so these are fully qualified. -->
+<link rel="canonical" href="https://shiyiwang958.github.io/multimodal-meta-flow-maps/">
+<meta property="og:url" content="https://shiyiwang958.github.io/multimodal-meta-flow-maps/">
+<meta property="og:type" content="website">
+<meta property="og:title" content="Scalable Inference-time Steering in Biological Design with Multimodal Meta Flow Maps">
+<meta property="og:description" content="Discrete (dMFM) and multimodal (multiMFM) Meta Flow Maps steer DNA and molecule generators toward target properties with one reward-independent flow map per base model.">
+<meta property="og:image" content="https://shiyiwang958.github.io/multimodal-meta-flow-maps/assets/og-image.jpg">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Scalable Inference-time Steering in Biological Design with Multimodal Meta Flow Maps">
+<meta name="twitter:image" content="https://shiyiwang958.github.io/multimodal-meta-flow-maps/assets/og-image.jpg">
+
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%23264653'/%3E%3Cpath d='M16 6 27 25H5Z' fill='none' stroke='%23e9f5f3' stroke-width='2.4' stroke-linejoin='round'/%3E%3Ccircle cx='16' cy='18.5' r='2.6' fill='%23c0392f'/%3E%3C/svg%3E">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&family=Schibsted+Grotesk:wght@500;600;700;800&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600&display=swap">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css" integrity="sha384-n8MVd4RsNIU0tAv4ct0nTaAbDJwPJzDEaqSD1odI+WdtXRGWt2kTvGFasHpSy3SV" crossorigin="anonymous">
+
+<style>
+/* Layout: a 42rem reading column; figures, tables and the hero break out to 68rem; slim sticky section bar.
+   Palette is the paper's own preprint class (slate ink, juniper, accent green, line green) plus the
+   crimson its plots use for multiMFM. */
+:root {
+  --bg: #fcfdfc;
+  --surface: #f1f6f4;
+  --panel: #f5f4ec;
+  --ink: #1d2d35;
+  --muted: #56676d;
+  --line: #d8e2dc;
+  --juniper: #264653;
+  --accent: #22543d;
+  --crimson: #a3172e;
+  --ours-bg: #fbeef0;
+  --rule-red: #c8aaaa;
+  --plate: #ffffff;
+  --on-juniper: #f4faf8;
+
+  --f-display: "Schibsted Grotesk", "Helvetica Neue", Arial, system-ui, sans-serif;
+  --f-body: "Source Serif 4", "Iowan Old Style", Georgia, "Times New Roman", serif;
+  --f-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+
+  --gutter: clamp(16px, 4vw, 40px);
+  --col: 42rem;
+  --wide: 68rem;
+  --radius: 6px;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0f1719;
+    --surface: #152125;
+    --panel: #18221f;
+    --ink: #e2ebe8;
+    --muted: #9aaeac;
+    --line: #2b3d40;
+    --juniper: #8ec5c6;
+    --accent: #7fc8a2;
+    --crimson: #f08a98;
+    --ours-bg: #2c1a1f;
+    --rule-red: #8a5a62;
+    --plate: #f2f5f3;
+    --on-juniper: #0f1719;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0f1719;
+  --surface: #152125;
+  --panel: #18221f;
+  --ink: #e2ebe8;
+  --muted: #9aaeac;
+  --line: #2b3d40;
+  --juniper: #8ec5c6;
+  --accent: #7fc8a2;
+  --crimson: #f08a98;
+  --ours-bg: #2c1a1f;
+  --rule-red: #8a5a62;
+  --plate: #f2f5f3;
+  --on-juniper: #0f1719;
+  color-scheme: dark;
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+html { scroll-behavior: smooth; scroll-padding-top: 4.5rem; -webkit-text-size-adjust: 100%; }
+@media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
+body {
+  margin: 0;
+  padding-inline: var(--gutter);
+  padding-block: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--f-body);
+  font-size: 1.0625rem;
+  line-height: 1.65;
+  font-optical-sizing: auto;
+  overflow-x: hidden;
+}
+img { max-width: 100%; height: auto; display: block; }
+a { color: var(--accent); text-decoration-thickness: 1px; text-underline-offset: 0.18em; }
+a:hover { text-decoration-thickness: 2px; }
+:focus-visible { outline: 2px solid var(--crimson); outline-offset: 3px; border-radius: 2px; }
+
+.skip { position: absolute; left: -999px; top: 0.5rem; background: var(--juniper); color: var(--on-juniper); padding: 0.4rem 0.8rem; z-index: 20; font-family: var(--f-display); }
+.skip:focus { left: 0.5rem; }
+
+/* ---------- top bar ---------- */
+.topbar {
+  position: sticky;
+  top: env(safe-area-inset-top, 0px);
+  z-index: 10;
+  margin-inline: calc(-1 * var(--gutter));
+  padding-inline: var(--gutter);
+  background: var(--bg);
+  border-bottom: 1px solid var(--line);
+}
+.topbar-inner {
+  max-width: var(--wide);
+  margin-inline: auto;
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+  min-height: 3.25rem;
+}
+.wordmark {
+  font-family: var(--f-display);
+  font-weight: 800;
+  font-size: 1.05rem;
+  letter-spacing: -0.01em;
+  color: var(--ink);
+  text-decoration: none;
+  white-space: nowrap;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+.wordmark svg { width: 1.15rem; height: 1.15rem; flex: none; }
+.navlinks {
+  display: flex;
+  gap: 0.25rem;
+  margin: 0 0 0 auto;
+  padding: 0;
+  list-style: none;
+  overflow-x: auto;
+  scrollbar-width: none;
+  min-width: 0;
+}
+.navlinks::-webkit-scrollbar { display: none; }
+.navlinks a {
+  display: block;
+  font-family: var(--f-display);
+  font-weight: 500;
+  font-size: 0.9rem;
+  color: var(--muted);
+  text-decoration: none;
+  padding: 0.35rem 0.6rem;
+  border-radius: 4px;
+  white-space: nowrap;
+}
+.navlinks a:hover { color: var(--ink); background: var(--surface); }
+
+/* ---------- containers ---------- */
+.col, .wide { margin-inline: auto; width: 100%; }
+.col { max-width: var(--col); }
+.wide { max-width: var(--wide); }
+section { padding-block: 3.5rem 0; }
+.stack { display: flex; flex-direction: column; gap: 1.1rem; }
+.stack > * { margin: 0; min-width: 0; }
+
+/* ---------- type ---------- */
+h1, h2, h3 { font-family: var(--f-display); color: var(--ink); text-wrap: balance; margin: 0; }
+h1 { font-weight: 800; font-size: clamp(2rem, 4.4vw, 3.3rem); line-height: 1.07; letter-spacing: -0.022em; }
+h2 { font-weight: 700; font-size: clamp(1.55rem, 2.6vw, 2.05rem); line-height: 1.15; letter-spacing: -0.015em; }
+h3 { font-weight: 600; font-size: 1.18rem; line-height: 1.3; letter-spacing: -0.005em; }
+.eyebrow {
+  font-family: var(--f-mono);
+  font-size: 0.75rem;
+  font-weight: 500;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+.lede { font-size: 1.2rem; line-height: 1.55; }
+.muted { color: var(--muted); }
+.small { font-size: 0.92rem; }
+p { text-wrap: pretty; }
+strong { font-weight: 600; }
+.katex { font-size: 1.05em; }
+.eq { overflow-x: auto; overflow-y: hidden; padding-block: 0.25rem; }
+.eq .katex-display { margin: 0.4rem 0; }
+
+/* ---------- hero ---------- */
+.hero { padding-block: clamp(2.5rem, 7vw, 4.75rem) 0; display: flex; flex-direction: column; gap: 1.4rem; }
+.hero .eyebrow { display: flex; flex-wrap: wrap; gap: 0.4rem 1rem; }
+.authors {
+  font-family: var(--f-display);
+  font-size: 1.08rem;
+  font-weight: 500;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.15rem 1.15rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.authors sup { font-size: 0.68em; color: var(--muted); margin-left: 0.08em; }
+.affils { font-family: var(--f-display); font-size: 0.92rem; color: var(--muted); display: flex; flex-wrap: wrap; gap: 0.2rem 1.1rem; margin: 0; }
+.affils sup { margin-right: 0.15em; }
+.buttons { display: flex; flex-wrap: wrap; gap: 0.6rem; margin: 0.3rem 0 0; padding: 0; list-style: none; }
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-family: var(--f-display);
+  font-weight: 600;
+  font-size: 0.95rem;
+  padding: 0.55rem 1rem;
+  border-radius: var(--radius);
+  border: 1px solid var(--ink);
+  color: var(--ink);
+  background: transparent;
+  text-decoration: none;
+  line-height: 1.2;
+}
+.btn svg { width: 1rem; height: 1rem; flex: none; }
+.btn:hover { background: var(--surface); text-decoration: none; }
+.btn.primary { background: var(--juniper); border-color: var(--juniper); color: var(--on-juniper); }
+
+/* ---------- figures ---------- */
+figure { margin: 0; display: flex; flex-direction: column; gap: 0.75rem; min-width: 0; }
+.plate {
+  background: var(--plate);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: clamp(0.5rem, 1.6vw, 1.1rem);
+  overflow-x: auto;
+}
+.plate img { margin-inline: auto; }
+figcaption { font-size: 0.93rem; line-height: 1.55; color: var(--muted); max-width: var(--col); }
+figcaption b { color: var(--ink); font-family: var(--f-display); font-weight: 600; }
+.wide > figcaption { margin-inline: auto; }
+.teaser { margin-top: 2.5rem; }
+
+/* ---------- tl;dr + contributions ---------- */
+.tldr {
+  font-family: var(--f-display);
+  font-size: clamp(1.15rem, 2vw, 1.4rem);
+  font-weight: 500;
+  line-height: 1.4;
+  letter-spacing: -0.005em;
+}
+.tldr em { font-style: normal; color: var(--crimson); }
+.propbox {
+  background: var(--panel);
+  border-left: 5px solid var(--accent);
+  padding: 1.1rem 1.25rem;
+}
+.propbox h3 { font-size: 1rem; color: var(--accent); margin-bottom: 0.5rem; }
+.propbox ul { margin: 0; padding-left: 1.1rem; display: flex; flex-direction: column; gap: 0.4rem; }
+.propbox li::marker { color: var(--accent); }
+
+/* ---------- highlights ---------- */
+.highlights { display: grid; grid-template-columns: 1fr; gap: 0; margin: 0; padding: 0; list-style: none; border-top: 1px solid var(--ink); }
+@media (min-width: 34rem) { .highlights { grid-template-columns: repeat(2, 1fr); column-gap: 2rem; } }
+@media (min-width: 62rem) { .highlights { grid-template-columns: repeat(4, 1fr); } }
+.highlights li { padding-block: 1rem 1.25rem; border-bottom: 1px solid var(--line); display: flex; flex-direction: column; gap: 0.35rem; min-width: 0; }
+.hl-tag { font-family: var(--f-mono); font-size: 0.7rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
+.hl-num {
+  font-family: var(--f-display);
+  font-weight: 800;
+  font-size: clamp(1.7rem, 3vw, 2.2rem);
+  line-height: 1.05;
+  letter-spacing: -0.02em;
+  color: var(--crimson);
+  font-variant-numeric: tabular-nums;
+}
+.hl-num .from { color: var(--muted); font-weight: 600; font-size: 0.62em; letter-spacing: 0; }
+.hl-text { font-size: 0.95rem; line-height: 1.5; }
+
+/* ---------- definition box ---------- */
+.defbox {
+  border-left: 5px solid var(--rule-red);
+  background: var(--surface);
+  padding: 0.9rem 1.2rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+.defbox .label { font-family: var(--f-display); font-weight: 700; font-size: 0.95rem; }
+.defbox p { margin: 0; }
+
+/* ---------- algorithm ---------- */
+.algo { border-top: 2px solid var(--ink); border-bottom: 2px solid var(--ink); padding-block: 0.6rem 0.8rem; font-size: 0.96rem; }
+.algo-title { font-family: var(--f-display); font-weight: 700; font-size: 0.95rem; padding-bottom: 0.45rem; border-bottom: 1px solid var(--line); margin-bottom: 0.5rem; }
+.algo-req { font-size: 0.9rem; color: var(--muted); margin: 0 0 0.4rem; }
+.algo ol { margin: 0; padding: 0; list-style: none; counter-reset: line; }
+.algo li { counter-increment: line; display: grid; grid-template-columns: 1.6rem minmax(0, 1fr); gap: 0.4rem; padding-block: 0.12rem; }
+.algo li::before { content: counter(line); font-family: var(--f-mono); font-size: 0.75rem; color: var(--muted); padding-top: 0.3rem; text-align: right; }
+.algo li > .t { min-width: 0; }
+.algo .ind > .t { padding-left: 1.4rem; }
+.algo .kw { font-family: var(--f-display); font-weight: 700; font-size: 0.86em; letter-spacing: 0.02em; }
+.algo .cm { color: var(--muted); font-style: italic; }
+
+/* ---------- tables ---------- */
+.tablefig { display: flex; flex-direction: column; gap: 0.75rem; }
+.table-wrap { overflow-x: auto; border-top: 2px solid var(--ink); border-bottom: 2px solid var(--ink); }
+table { border-collapse: collapse; width: 100%; font-family: var(--f-display); font-size: 0.92rem; font-variant-numeric: tabular-nums lining-nums; }
+th, td { padding: 0.5rem 0.7rem; text-align: right; white-space: nowrap; }
+th:first-child, td:first-child { text-align: left; }
+thead th { font-weight: 600; vertical-align: bottom; border-bottom: 1px solid var(--ink); }
+thead tr.super th { border-bottom: 1px solid var(--line); font-weight: 500; color: var(--muted); font-size: 0.82rem; text-align: center; }
+thead tr.super th:first-child { border-bottom: 0; }
+th .unit { display: block; font-weight: 400; font-size: 0.75rem; color: var(--muted); }
+tbody td { border-bottom: 1px solid var(--line); }
+tbody tr:last-child td { border-bottom: 0; }
+tr.group td { font-family: var(--f-mono); font-size: 0.7rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); background: var(--surface); padding-block: 0.3rem; text-align: left; }
+td .cat { display: block; font-size: 0.78rem; color: var(--muted); font-weight: 400; }
+td .ci { display: block; font-size: 0.76rem; color: var(--muted); }
+tr.ours td { background: var(--ours-bg); }
+tr.ours td:first-child { color: var(--crimson); font-weight: 700; }
+tr.ref td { color: var(--muted); }
+.best { font-weight: 800; }
+.second { text-decoration: underline; text-decoration-thickness: 1.5px; text-underline-offset: 0.2em; }
+
+/* ---------- two-up ---------- */
+.callouts { display: grid; grid-template-columns: 1fr; gap: 1.5rem 2.5rem; }
+@media (min-width: 52rem) { .callouts { grid-template-columns: 1fr 1fr; } }
+.callouts > div { display: flex; flex-direction: column; gap: 0.6rem; min-width: 0; }
+.callouts h3 { font-size: 1.05rem; }
+.callouts p { margin: 0; }
+
+/* ---------- related + bibtex ---------- */
+.related { margin: 0; padding: 0; list-style: none; display: grid; grid-template-columns: 1fr; border-top: 1px solid var(--line); }
+@media (min-width: 40rem) { .related { grid-template-columns: 1fr 1fr; column-gap: 2rem; } }
+.related li { padding-block: 0.75rem; border-bottom: 1px solid var(--line); display: flex; flex-direction: column; gap: 0.1rem; min-width: 0; }
+.related a { font-family: var(--f-display); font-weight: 600; text-decoration: none; }
+.related a:hover { text-decoration: underline; }
+.related span { font-size: 0.88rem; color: var(--muted); }
+
+.bib { position: relative; }
+.bib pre {
+  margin: 0;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 1rem 1.1rem 1rem;
+  padding-top: 2.7rem;
+  overflow-x: auto;
+  font-family: var(--f-mono);
+  font-size: 0.82rem;
+  line-height: 1.6;
+  color: var(--ink);
+}
+.copy {
+  position: absolute;
+  top: 0.55rem;
+  right: 0.55rem;
+  font-family: var(--f-display);
+  font-weight: 600;
+  font-size: 0.82rem;
+  padding: 0.3rem 0.7rem;
+  border-radius: 4px;
+  border: 1px solid var(--line);
+  background: var(--bg);
+  color: var(--ink);
+  cursor: pointer;
+}
+.copy:hover { border-color: var(--ink); }
+
+/* ---------- footer ---------- */
+footer { margin-top: 4.5rem; border-top: 1px solid var(--line); padding-block: 2rem 3rem; }
+footer .wide { display: flex; flex-direction: column; gap: 1rem; }
+footer p { margin: 0; font-size: 0.88rem; color: var(--muted); line-height: 1.6; }
+footer h3 { font-size: 0.95rem; }
+.contact { display: flex; flex-wrap: wrap; gap: 0.3rem 1.5rem; font-family: var(--f-mono); font-size: 0.85rem; }
+
+@media (max-width: 34rem) {
+  body { font-size: 1rem; }
+  .lede { font-size: 1.08rem; }
+  th, td { padding: 0.45rem 0.5rem; }
+}
+</style>
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+
+<nav class="topbar" aria-label="Sections">
+  <div class="topbar-inner">
+    <a class="wordmark" href="#top">
+      <svg viewBox="0 0 32 32" aria-hidden="true"><path d="M16 5 28 26H4Z" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linejoin="round"/><circle cx="16" cy="18.6" r="3" fill="currentColor"/></svg>
+      multiMFM
+    </a>
+    <ul class="navlinks">
+      <li><a href="#overview">Overview</a></li>
+      <li><a href="#method">Method</a></li>
+      <li><a href="#dna">DNA</a></li>
+      <li><a href="#molecules">Molecules</a></li>
+      <li><a href="#scaling">Scaling</a></li>
+      <li><a href="#citation">Cite</a></li>
+    </ul>
+  </div>
+</nav>
+
+<main id="main">
+
+<header class="hero wide" id="top">
+  <p class="eyebrow"><span>Preprint 2026</span><span>dMFM &amp; multiMFM</span></p>
+  <h1>Scalable Inference-time Steering in Biological Design with Multimodal Meta&nbsp;Flow&nbsp;Maps</h1>
+  <ul class="authors">
+    <li>Ulrik Unneberg<sup>1,*</sup></li>
+    <li>Shiyi Wang<sup>1,3,4,*</sup></li>
+    <li>Dinko Franceschi<sup>1</sup></li>
+    <li>Ziyu Xiong<sup>2</sup></li>
+    <li>Boris Kozinsky<sup>1</sup></li>
+    <li>Ellen D. Zhong<sup>2</sup></li>
+    <li>Michael S. Albergo<sup>1,3,4</sup></li>
+  </ul>
+  <p class="affils">
+    <span><sup>1</sup>Harvard University</span>
+    <span><sup>2</sup>Princeton University</span>
+    <span><sup>3</sup>Kempner Institute</span>
+    <span><sup>4</sup>IAIFI</span>
+    <span><sup>*</sup>Core contributors</span>
+  </p>
+  <!-- Put the compiled PDF next to this file as paper.pdf, or point this button at the arXiv page. -->
+  <ul class="buttons">
+    <li><a class="btn primary" href="paper.pdf">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><path d="M14 3v6h6M8 13h8M8 17h5"/></svg>
+      Paper (PDF)</a></li>
+    <li><a class="btn" href="https://github.com/shiyiwang958/MultiMFM" rel="noopener">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m8 7-5 5 5 5M16 7l5 5-5 5M13.5 4l-3 16"/></svg>
+      Code</a></li>
+    <li><a class="btn" href="#citation">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 7h4v4c0 3-1.5 5-4 6M15 7h4v4c0 3-1.5 5-4 6"/></svg>
+      BibTeX</a></li>
+  </ul>
+</header>
+
+<figure class="wide teaser">
+  <div class="plate">
+    <img src="assets/teaser.jpg" width="2000" height="571" alt="Four scatter panels of colored particles. Gaussian noise; the base model, a uniform square of red, white and blue points; the same distribution steered by a Norway-flag reward, which arranges the colors into the Norwegian flag; and steered by a smiley reward, which moves points into two colored eyes and a white mouth.">
+  </div>
+  <figcaption><b>Posterior guidance with a multimodal Meta Flow Map.</b> Each particle carries a continuous position and a discrete color. \(p_0\) is the noise distribution and \(p_1\) the base model. The Norway reward steers color only and leaves the square spatial distribution intact; the Smiley reward steers position and color together. Both use the one-step multiMFM, with the base model left untouched.</figcaption>
+</figure>
+
+<section id="overview" class="col stack">
+  <p class="eyebrow">Overview</p>
+  <p class="tldr">Distill <em>one reward-independent flow map</em> per base generator, then steer discrete, continuous or mixed outputs toward any differentiable objective at inference time.</p>
+  <p>Biological design problems are continuous (molecular structures), discrete (DNA residue types), and often both at once (protein structure–sequence co-design). Diffusion and CTMC-based methods exist for multimodal generation, and for cross-modal tasks the two are typically combined. It remains hard to adapt them at inference time to satisfy design constraints. One-shot samplers such as Meta Flow Maps have shown high controllability for image generation by supplying accurately estimated reward gradients.</p>
+  <p>We adapt Meta Flow Maps to biological domains, developing the framework in the discrete setting (<strong>dMFM</strong>) and the multimodal setting (<strong>multiMFM</strong>). We demonstrate dMFM by designing DNA sequences with a target mechanical property, and apply multiMFM, trained on QM9 and GEOM-Drugs, to design molecules with a given physical property. In both cases the steering algorithms improve target attainment using one reward-independent MFM per base generator.</p>
+  <div class="propbox">
+    <h3>Contributions</h3>
+    <ul>
+      <li>We construct <strong>multiMFM</strong> for small-molecule generation, steering toward chemical-property targets with a single distilled map reused across objectives.</li>
+      <li>We formulate <strong>discrete GLASS posterior sampling</strong> and derive the discrete Meta Flow Map.</li>
+      <li>We combine continuous and discrete MFMs for <strong>mixed discrete–continuous steering</strong>.</li>
+      <li>dMFM enables inference-time optimization of <strong>DNA sequences toward prescribed cyclizability values</strong>.</li>
+    </ul>
+  </div>
+</section>
+
+<section class="wide">
+  <ul class="highlights">
+    <li>
+      <span class="hl-tag">QM9, six properties</span>
+      <span class="hl-num">5 of 6</span>
+      <span class="hl-text">best reported MAE among steering methods, with one backbone instead of one generator per property.</span>
+    </li>
+    <li>
+      <span class="hl-tag">Value estimate</span>
+      <span class="hl-num">~100&times;</span>
+      <span class="hl-text">lower error than the denoiser and one-step-map point estimates it replaces, and it keeps falling with budget.</span>
+    </li>
+    <li>
+      <span class="hl-tag">DNA, oracle MAE</span>
+      <span class="hl-num">0.15 <span class="from">from 1.17</span></span>
+      <span class="hl-text">against a parent-disjoint oracle at target \(y^\star = +1\); 98.3% of paired samples improve.</span>
+    </li>
+    <li>
+      <span class="hl-tag">Steer-search</span>
+      <span class="hl-num">0 extra</span>
+      <span class="hl-text">generative-model calls: it returns the best valid look-ahead the estimator already computed.</span>
+    </li>
+  </ul>
+</section>
+
+<section id="method" class="col stack">
+  <p class="eyebrow">Method</p>
+  <h2>Steering a fixed generator with posterior look-aheads</h2>
+  <p>Let a flow matching model \(b_t(x_t)\) sample \(p_1\). To sample the reward-tilted distribution \(\propto p_1(x_1)e^{r(x_1)}\), the exact drift, score and posterior value function give an ODE sampler</p>
+  <div class="eq">\[ dX_t = \Big(b_t(X_t) + \tfrac{\sigma_t^2}{2}\nabla V_t(X_t)\Big)\,dt, \qquad V_t(x_t) = \log \mathbb{E}\big[e^{r(X_1)} \mid X_t = x_t\big]. \]</div>
+  <p>Everything turns on the value function \(V_t\). A Meta Flow Map \(\Phi(\cdot\,;t,x_t)\) is a one-step sampler that maps Gaussian noise to a sample of the posterior \(p_{1|t}(\cdot\mid x_t)\). Drawing \(N\) noises gives \(N\) look-aheads at the finished object and a Monte Carlo estimator of the gradient:</p>
+  <div class="eq">\[ \widehat{\nabla V}^{\,r}_t(x_t) = \nabla_x \log\left(\frac{1}{N}\sum_{i=1}^{N}\exp\big(r(\Phi(\epsilon_i;t,x_t))\big)\right). \]</div>
+  <p>This is what separates the method from a denoiser or one-step-map approximation. Those produce a point estimate of a quantity that is an expectation, so no amount of compute improves them; the posterior estimator converges with \(N\). The finite-\(N\) log-mean estimator is biased, and for discrete outputs, differentiating through simplex-valued predictions estimates a relaxed surrogate rather than pathwise gradients through exact categorical samples.</p>
+</section>
+
+<figure class="wide">
+  <div class="plate">
+    <img src="assets/method.png" width="1598" height="773" alt="Schematic of multimodal steering. On the left a continuous axis from a Gaussian prior to a multimodal data density; on the right a probability simplex with three vertices. A dashed black untilted trajectory and a solid red tilted trajectory run through both. From the current state, light gray fans of posterior look-ahead samples spread to the endpoint, where a reward evaluates them and sends gradients back as yellow arrows on each modality.">
+  </div>
+  <figcaption><b>Inference-time steering with a multimodal Meta Flow Map.</b> The unguided trajectory is dotted black. Conditioned on the current state \((t, y_t, a_t)\), the map draws look-aheads from the joint posterior \(p_{1|t}(y_1,a_1 \mid y_t, a_t)\), shown in light gray. The reward \(r(x_1)\) evaluates them and sends gradient signal back to steer the path. No independence between modalities is assumed.</figcaption>
+</figure>
+
+<section class="col stack">
+  <h3>The discrete map</h3>
+  <p>Discrete flow matching learns a denoiser \(\psi_t(x_t)=\mathbb{E}[X_1\mid X_t=x_t]\) valued on the simplex \(\Delta^{K-1}\), whose velocity is analytic in it: \(b_t(x) = (\psi_t(x)-x)/(1-t)\). Extending GLASS to this setting, the posterior \(p(x_1\mid X_t=x_t)\) is sampled by an inner flow whose velocity is again analytic in the base denoiser, evaluated at a reparameterized time \(t^\ast\) on a sufficient statistic \(S(\bar x_s, x_t)\).</p>
+  <div class="defbox">
+    <span class="label">Definition — Discrete Meta Flow Map</span>
+    <p>A dMFM \(\mathbf{X}_{s,u}(\cdot\,;t,x_t):\mathbb{R}^K\to\mathbb{R}^K\) is the solution operator of that inner ODE: for every \(t&lt;1\), every \(x_t\) and every \(0\le s\le u&lt;1\), \(\mathbf{X}_{s,u}(\bar x_s;t,x_t)=\bar x_u\). The terminal map at \(u=1\) is an almost-sure endpoint limit.</p>
+  </div>
+  <p>We reparameterize it through a <em>mean meta denoiser</em> \(\mathbf{\Psi}_{s,u}\), kept on the simplex by a softmax over network logits. Training needs no simulation of the inner ODE: on the diagonal the meta denoiser collapses onto the base model.</p>
+  <div class="defbox">
+    <span class="label">Proposition — Diagonal meta denoiser</span>
+    <p>For the linear interpolant, \(\mathbf{\Psi}_{s,s}(\bar x_s;t,x_t) = \psi_{t^\ast}(S(\bar x_s, x_t))\), where \(\psi\) is the base discrete flow matching denoiser.</p>
+  </div>
+  <p>This gives a cross-entropy diagonal loss against the base model, which we add to a consistency loss enforcing the solution-operator identity. We use Eulerian self-distillation (ESD) for consistency training; progressive and Lagrangian variants are theoretical alternatives.</p>
+
+  <h3>Multimodal steering</h3>
+  <p>For a state with continuous and discrete parts \(x_t = (y_t, a_t)\), multiMFM samples the joint posterior and splits into continuous and discrete components \(\mathbf{X}_{s,u} = (\Phi^c_{s,u}, \mathbf{X}^d_{s,u})\), with each path steered by the partial gradient of the same value function. In practice we replace the exact coefficient \(\sigma_t^2/2\), which diverges as \(t\to 0\) and vanishes as \(t\to 1\), with a tuned guidance strength \(\gamma\):</p>
+  <div class="eq">\[ \begin{cases} dY_t = \big(b^y_t(Y_t,A_t) + \gamma\,\widehat{\partial_y V}_t(Y_t,A_t)\big)\,dt \\[2pt] dA_t = \big(b^a_t(Y_t,A_t) + \gamma\,\widehat{\partial_a V}_t(Y_t,A_t)\big)\,dt \end{cases} \]</div>
+  <p class="small muted">\(\gamma\) and the reward scale are practical hyperparameters and form no part of the theory; per-experiment values are given in the paper. Independent modality schedules require a matching joint posterior — changing the two coefficients alone does not preserve the exact-law argument.</p>
+
+  <h3 id="steer-search">Steer-search costs nothing</h3>
+  <p>multiMFM already computes a look-ahead at the finished object at every guided step, then throws it away. Steer-search keeps the best one. A look-ahead replaces the incumbent only if the guide scores it closer to the target <em>and</em> it passes PoseBusters, and the sampler returns that incumbent rather than wherever the trajectory landed. Measured with forward hooks, both arms spend exactly the same number of generative-model calls.</p>
+  <div class="algo">
+    <p class="algo-title">multiMFM with steer-search</p>
+    <p class="algo-req"><strong>Require:</strong> multiMFM \(\mathbf{X}=(\Phi^c, \mathbf{X}^d)\); base velocities \(b^y_t, b^a_t\); regressor \(\mathcal{R}\); target \(c^\star\); validity checker \(\pi\in\{0,1\}\); look-aheads \(N\); strength \(\gamma\).</p>
+    <ol>
+      <li><span class="t"><span class="kw">set</span> \(r(y,a) = -\beta\|\mathcal{R}(y,a) - c^\star\|^2\); initialize \((y_0,a_0)\sim p_0\), store \(S\leftarrow\emptyset\), \(\mathrm{err}(S)\leftarrow+\infty\)</span></li>
+      <li><span class="t"><span class="kw">for</span> \(k = 0,\dots,T-1\) <span class="kw">do</span></span></li>
+      <li class="ind"><span class="t">sample \(\epsilon^y_i,\epsilon^a_i\) and draw look-aheads \((y_{1,i}, a_{1,i}) \leftarrow \mathbf{X}_{0,1}(\epsilon^y_i, \epsilon^a_i;\, t_k, y_{t_k}, a_{t_k})\), \(i=1,\dots,N\)</span></li>
+      <li class="ind"><span class="t"><span class="kw">if</span> \(\mathrm{err}_i &lt; \mathrm{err}(S)\) <span class="kw">and</span> \(\pi(y_{1,i},a_{1,i}) = 1\) <span class="kw">then</span> \(S \leftarrow \{(y_{1,i},a_{1,i}),\ \mathrm{err}_i\}\) <span class="cm">— the only extra work</span></span></li>
+      <li class="ind"><span class="t">estimate \(\widehat{\partial_y V}\) and \(\widehat{\partial_a V}\) from the same look-aheads, then advance one step of size \(\gamma\,\widehat{\partial V}\,dt\)</span></li>
+      <li><span class="t"><span class="kw">return</span> the endpoint if it is valid and beats \(S\), else the molecule stored in \(S\)</span></li>
+    </ol>
+  </div>
+  <p class="small muted">One caution on reading it: selection is made on the guide, so the guide's view of the selected molecule improves far more than an independent oracle's does. Only the oracle column is the result.</p>
+</section>
+
+<section id="dna" class="col stack">
+  <p class="eyebrow">Experiment 1 — discrete</p>
+  <h2>Designing DNA for a target mechanical property</h2>
+  <p>Sequence-encoded DNA mechanics carry regulatory information beyond transcription-factor motif content. Loop-seq measurements showed that intrinsic cyclizability is sequence dependent, and that promoter-proximal yeast nucleosome-depleted regions contain unusually low-cyclizability DNA. We train a base discrete flow model in the ambient sequence space \((\mathbb{R}^4)^L\), distill it into a dMFM with the ESD loss, and steer 50-bp sequences toward a prescribed predicted cyclizability.</p>
+</section>
+
+<figure class="wide">
+  <div class="plate">
+    <img src="assets/dna_schematic.png" width="2200" height="821" alt="Three-panel schematic. Left: a cyclizability objective, with a bimodal distribution of CNN-predicted scores, a target value marked by a red arrow, and the squared-error reward. Middle: a reward-steered discrete flow, showing per-position nucleotide distributions that start near-uniform under the unconditional model and become sharply peaked on single bases after reward-gradient tilting. Right: designed 50-bp sequences as colored bars with their predicted scores near the target.">
+  </div>
+  <figcaption><b>Cyclizability-guided DNA design.</b> A guide predictor \(f_{\mathrm{guide}}\) defines the terminal reward \(r(x_1;y^\star) = -(f_{\mathrm{guide}}(x_1)-y^\star)^2\) and supplies gradients during sampling. Generated sequences are then scored by a parent-disjoint oracle predictor, which is never used for guidance. On the 58 held-out test parents (8,294 windows) the guide reaches Pearson \(r = 0.88\) with MAE 0.159, the oracle \(r = 0.87\) with MAE 0.162. Their independence is in training data — disjoint parents, different seeds — not architecture.</figcaption>
+</figure>
+
+<section class="wide tablefig">
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr class="super">
+          <th scope="col">Target \(y^\star\)</th>
+          <th scope="colgroup" colspan="2">Mean oracle score</th>
+          <th scope="colgroup" colspan="3">mean [95% CI]</th>
+        </tr>
+        <tr>
+          <th scope="col"></th>
+          <th scope="col">Unguided</th>
+          <th scope="col">Guided</th>
+          <th scope="col">Unguided MAE</th>
+          <th scope="col">Guided MAE</th>
+          <th scope="col">Paired improvement</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>\(+1\)</td>
+          <td>\(-0.171\)</td>
+          <td>\(0.920\)</td>
+          <td>1.174 <span class="ci">[1.149, 1.200]</span></td>
+          <td class="best">0.153 <span class="ci">[0.146, 0.161]</span></td>
+          <td>1.020 <span class="ci">[0.994, 1.048]</span></td>
+        </tr>
+        <tr>
+          <td>\(-1\)</td>
+          <td>\(-0.171\)</td>
+          <td>\(-0.964\)</td>
+          <td>0.833 <span class="ci">[0.806, 0.857]</span></td>
+          <td class="best">0.117 <span class="ci">[0.111, 0.123]</span></td>
+          <td>0.715 <span class="ci">[0.688, 0.742]</span></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+  <p class="small muted" style="max-width: var(--col); margin-inline: auto;">Independent evaluation of cyclizability-guided generation with dMFM, \(n=1000\) guided–unguided pairs per target sharing initial noise. Guidance reduces oracle target error for 98.3% of pairs at \(y^\star{=}{+}1\) and 97.2% at \(y^\star{=}{-}1\).</p>
+</section>
+
+<section class="col stack">
+  <p>Target attainment transfers to the parent-disjoint oracle, which shows the gains are not an artifact of evaluating with the regressor being optimized. The guided errors of 0.153 and 0.117 are, however, comparable to the oracle's own MAE of 0.16 against measured C0 on held-out parents. <strong>The experiment establishes that guidance reaches the target region, not that it attains the target to within 0.15</strong>; resolving finer differences would need a more accurate evaluator than either regressor.</p>
+  <div class="callouts">
+    <div>
+      <h3>A split that precedes windowing</h3>
+      <p>Loop-seq gives 100-bp records; consecutive central 50-bp windows overlap by 43 bp, so they reconstruct into 576 contiguous 1,044-bp parents. We split those 576 parents <em>before</em> extracting any window, into 230 training and 29 validation parents per half plus 58 held-out test parents. A split applied after extraction would place overlapping neighbours on both sides.</p>
+    </div>
+    <div>
+      <h3>Rewards with no learned evaluator</h3>
+      <p>To test steering without any learned scorer, we also use two exactly computable sequence rewards: a smooth occurrence score for the motif <span class="mono">TTTTTC</span>, and a conjunction requiring both <span class="mono">TTTTTC</span> and <span class="mono">AAAATT</span>. Across \(L\in\{50,100,200,400\}\), guidance improves around 95% of matched pairs.</p>
+    </div>
+  </div>
+</section>
+
+<section id="molecules" class="col stack">
+  <p class="eyebrow">Experiment 2 — multimodal</p>
+  <h2>Molecular property guidance on QM9</h2>
+  <p>We train a molecule model whose discrete modality is atom types and whose continuous modality is coordinates. The architecture follows TABASCO, with the CTMC over discrete types replaced by discrete flow matching with a continuous Gaussian prior flowing to the simplex. After verifying strong PoseBusters validity on the base model, we distill a multiMFM and steer with the heavy-atom setup of TFG-Flow.</p>
+  <p>One asymmetry is worth stating plainly, because it runs against us. We import published baselines evaluated under RDKit validity, while our errors use the stricter PoseBusters filter, which additionally checks bond lengths, angles, planarity, internal clashes and internal energy. A molecule that is RDKit-valid but geometrically implausible is scored under the imported baselines and discarded under ours.</p>
+</section>
+
+<section class="wide tablefig">
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th scope="col">Method</th>
+          <th scope="col">\(C_v\)<span class="unit">cal/mol·K</span></th>
+          <th scope="col">\(\mu\)<span class="unit">D</span></th>
+          <th scope="col">\(\alpha\)<span class="unit">Bohr³</span></th>
+          <th scope="col">\(\Delta\varepsilon\)<span class="unit">meV</span></th>
+          <th scope="col">\(\varepsilon_{\mathrm{HOMO}}\)<span class="unit">meV</span></th>
+          <th scope="col">\(\varepsilon_{\mathrm{LUMO}}\)<span class="unit">meV</span></th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr class="group"><td colspan="7">Reference</td></tr>
+        <tr class="ref"><td>Upper bound</td><td>6.87</td><td>1.61</td><td>8.98</td><td>1464</td><td>645</td><td>1457</td></tr>
+        <tr class="ref"><td>#Atoms</td><td>1.97</td><td>1.05</td><td>3.86</td><td>886</td><td>426</td><td>813</td></tr>
+        <tr class="ref"><td>Lower bound</td><td>0.040</td><td>0.043</td><td>0.09</td><td>65</td><td>39</td><td>36</td></tr>
+
+        <tr class="group"><td colspan="7">Conditionally trained</td></tr>
+        <tr><td>Cond-EDM<span class="cat">Continuous diffusion</span></td><td>1.065</td><td>1.123</td><td>2.78</td><td>671</td><td>371</td><td>601</td></tr>
+        <tr><td>EEGSDE<span class="cat">Continuous diffusion</span></td><td>0.941</td><td>0.777</td><td>2.50</td><td>487</td><td>302</td><td>447</td></tr>
+        <tr><td>UniGEM<span class="cat">Continuous diffusion</span></td><td>0.873</td><td>0.805</td><td>2.22</td><td>511</td><td class="best">233</td><td>592</td></tr>
+        <tr><td>Cond-Flow<span class="cat">Multimodal flow</span></td><td>1.52</td><td>0.962</td><td>3.10</td><td>805</td><td>435</td><td>693</td></tr>
+
+        <tr class="group"><td colspan="7">Training-free guidance</td></tr>
+        <tr><td>DPS<span class="cat">Continuous diffusion</span></td><td>5.26</td><td>63.2</td><td>51169</td><td>1380</td><td>744</td><td>NA</td></tr>
+        <tr><td>LGD<span class="cat">Continuous diffusion</span></td><td>3.77</td><td>1.51</td><td>7.15</td><td>1190</td><td>664</td><td>1200</td></tr>
+        <tr><td>FreeDoM<span class="cat">Continuous diffusion</span></td><td>2.84</td><td>1.35</td><td>5.92</td><td>1170</td><td>623</td><td>1160</td></tr>
+        <tr><td>MPGD<span class="cat">Continuous diffusion</span></td><td>2.86</td><td>1.51</td><td>4.26</td><td>1070</td><td>554</td><td>1060</td></tr>
+        <tr><td>UGD<span class="cat">Continuous diffusion</span></td><td>3.02</td><td>1.56</td><td>5.45</td><td>1150</td><td>582</td><td>1270</td></tr>
+        <tr><td>TFG<span class="cat">Continuous diffusion</span></td><td>2.77</td><td>1.33</td><td>3.90</td><td>893</td><td>568</td><td>984</td></tr>
+        <tr><td>TFG-Flow<span class="cat">Multimodal flow</span></td><td>1.75</td><td>0.817</td><td>2.32</td><td>804</td><td>364</td><td>941</td></tr>
+
+        <tr class="group"><td colspan="7">Ours</td></tr>
+        <tr class="ours"><td>multiMFM<span class="cat">Multimodal flow</span></td><td class="second">0.44</td><td class="best">0.56</td><td class="second">1.05</td><td class="second">465</td><td class="second">238</td><td class="second">306</td></tr>
+        <tr class="ours"><td>multiMFM-SS<span class="cat">Multimodal flow</span></td><td class="best">0.43</td><td class="best">0.56</td><td class="best">0.99</td><td class="best">450</td><td class="second">238</td><td class="best">274</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p class="small muted" style="max-width: var(--col); margin-inline: auto;">Mean absolute error for molecular property guidance; lower is better. Published baselines are reproduced from Table 1 of TFG-Flow. <b style="font-weight:800">Bold</b> marks the best value in each column among steering methods and <span class="second">underline</span> the second best; the three reference rows are excluded from both. Our rows are the mean over replicate runs of 1,000 molecules each, over all generated molecules rather than a validity-filtered subset.</p>
+</section>
+
+<section class="col stack">
+  <p>multiMFM errors are lower than the published TFG-Flow values on every property, at some cost in PoseBusters validity relative to the unguided base model — 98.4% unsteered, 90.2–92.5% with multiMFM, and 96.2–98.5% with steer-search, which raises validity on every property and lowers the error on four of the six. Uniqueness improves under steering too, from 70.8% unsteered to 88–95% steered and 97.5–98.3% with steer-search.</p>
+  <p>Note that TFG-Flow's "training based" category covers methods that learn property-conditioned generation or guidance components. We train the multiMFM once and then apply any reward function to it. Training it is only for sampling efficiency: the same posterior guidance can be done training-free with multimodal GLASS flows.</p>
+  <h3>Scaling to drug-sized molecules</h3>
+  <p>GEOM-Drugs contains molecules up to 71 heavy atoms, against 9 for QM9. We follow TFG-Flow's structural fingerprint benchmark, but take the log-reward to be a differentiable relaxation of the Tanimoto coefficient itself rather than a squared error on the same fingerprints. That choice matters more than any other setting here: asked to rank single-atom substitutions of real molecules, the relaxed Tanimoto reward agrees with true Tanimoto about twice as well as squared error does.</p>
+  <p><strong>This metric needs a floor before it can be read.</strong> Two <em>unrelated</em> real molecules of this size already share a Tanimoto similarity of about 0.22, because a path-based fingerprint rewards genericness. What guidance is worth is how far it moves above that floor, not its raw value.</p>
+</section>
+
+<figure class="wide">
+  <div class="plate">
+    <img src="assets/geom_fingerprint.png" width="1800" height="691" alt="Two panels. Left: overlapping histograms of FP2 Tanimoto to target for unguided molecules in gray and multiMFM in red, with the guided distribution shifted right of the unguided one; a dashed line marks the random-pair floor. Right: a dot plot comparing TFG-Flow unconditional, TFG-Flow, our base generator and multiMFM under a 30-heavy-atom cap, with a shaded band at or below the floor containing both TFG-Flow points.">
+  </div>
+  <figcaption><b>GEOM-Drugs structural fingerprint guidance.</b> In both panels the dashed line is the floor: the FP2 Tanimoto between two unrelated real molecules from the same pool. <b>Left:</b> the per-molecule distribution over all 12,288 generated molecules per arm, guided and unguided sharing noise and targets. Guidance shifts the whole distribution rather than a tail, and the unguided generator sits essentially on the floor. <b>Right:</b> the same experiment under TFG-Flow's 30-heavy-atom cap and scoring convention. Shading marks the region at or below that regime's floor; the value TFG-Flow reports for its guided model falls inside it, so that number alone cannot show the metric responding to target information.</figcaption>
+</figure>
+
+<section class="wide tablefig">
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th scope="col">Method</th>
+          <th scope="col">Tanimoto similarity ↑</th>
+          <th scope="col">Margin over floor ↑</th>
+          <th scope="col">PB-valid (%)</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr class="group"><td colspan="4">Molecules up to 71 heavy atoms</td></tr>
+        <tr class="ref"><td>Random pair of real molecules (floor)</td><td>0.2195</td><td>—</td><td>—</td></tr>
+        <tr><td>Our base generator (unguided)</td><td>0.2288 ± 0.0006</td><td>+0.009</td><td>87.5</td></tr>
+        <tr class="ours"><td>multiMFM</td><td class="best">0.2760 ± 0.0016</td><td class="best">+0.057</td><td class="best">89.5</td></tr>
+        <tr class="group"><td colspan="4">Capped at 30 heavy atoms, TFG-Flow's protocol</td></tr>
+        <tr class="ref"><td>Random pair of real molecules (floor)</td><td>0.2099</td><td>—</td><td>—</td></tr>
+        <tr><td>TFG-Flow unconditional</td><td>0.170 ± 0.001</td><td>−0.040</td><td>—</td></tr>
+        <tr><td>TFG-Flow</td><td>0.208 ± 0.002</td><td>−0.002</td><td>—</td></tr>
+        <tr><td>Our base generator (unguided)</td><td>0.2259 ± 0.0004</td><td>+0.016</td><td>87.5</td></tr>
+        <tr class="ours"><td>multiMFM</td><td class="best">0.2488 ± 0.0005</td><td class="best">+0.039</td><td class="best">89.0</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p class="small muted" style="max-width: var(--col); margin-inline: auto;">Tanimoto similarity between the directly counted fingerprint of each generated molecule and its target; no learned evaluator is involved. Our rows are the mean ± standard error over three replicates of 4,096 molecules, on seeds that played no part in selecting the guidance strength. The lower block uses TFG-Flow's cap and their scoring convention, which averages over all generated samples and counts an unconvertible one as zero; their two values are reproduced from the paper, which reports no validity figure.</p>
+</section>
+
+<section id="scaling" class="col stack">
+  <p class="eyebrow">Scaling and robustness</p>
+  <h2>The estimator that recovers the value function is the one that steers best per call</h2>
+  <p>The premise of the method is that a flow map makes the value function reachable by Monte Carlo, where a denoiser can only approximate it. That premise and its consequence can be measured separately, and they agree.</p>
+</section>
+
+<figure class="wide">
+  <div class="plate">
+    <img src="assets/qm9_nfe.png" width="1800" height="749" alt="Two log-scale panels. Left: value-function error against number of function evaluations; FMAP and DPS are flat horizontal lines while multiMFM falls steadily by about two orders of magnitude, staying above a dotted reference noise floor. Right: oracle MAE against forward-equivalent calls per molecule; best-of-N and Feynman-Kac lie on top of each other and descend steeply, DPS flattens early, and multiMFM and multiMFM-SS run below all of them at every budget.">
+  </div>
+  <figcaption><b>QM9 property steering (polarizability \(\alpha\)) at matched inference cost.</b> <b>Left:</b> error in the estimated value function against the number of posterior samples it is built from; each sample is one network call. DPS and FMAP are deterministic point estimates and cannot improve with budget. The dotted line is the reference's own sampling noise, which lies below every measured point, so the whole range is resolved rather than floor-limited. <b>Right:</b> held-out oracle MAE against forward-equivalent calls per molecule, with guided methods billed for their backward pass and pure-forward baselines not. Every method integrates the same trajectory, so the difference in budget is the value estimator alone.</figcaption>
+</figure>
+
+<section class="col stack">
+  <div class="callouts">
+    <div>
+      <h3>Estimating the value function</h3>
+      <p>multiMFM's error falls steadily as it spends more posterior samples, overtaking both point estimates after only a couple of them and ending about two orders of magnitude below either. The baselines are flat by construction: no amount of compute improves a point estimate of a quantity that is an expectation.</p>
+    </div>
+    <div>
+      <h3>The advantage carries into the samples</h3>
+      <p>multiMFM is below every baseline at every budget we test. Its lead over DPS — the comparison that holds the selection rule fixed — widens with budget, from a few percent to better than a factor of two, precisely because DPS has no posterior budget to spend. multiMFM-SS reaches at roughly half the compute an accuracy best-of-\(N\) attains only at the top of its range.</p>
+    </div>
+  </div>
+  <div class="propbox">
+    <h3>Two baselines reduce to independent sampling once corrected</h3>
+    <p style="margin:0">Feynman–Kac resamples its particles with replacement, which destroys diversity even when the weights are uniform. Gating resampling on the effective sample size, as is standard, removes that — and its tuned temperature on QM9 then goes to zero, at which point the method <em>is</em> best-of-\(N\); the figure shows the two superimposed. On DNA the same holds for MCTS, which matches best-of-\(N\) at matched rollout count, because the reward is terminal-only and the tree has no intermediate signal to exploit. We report both rather than present either as a distinct baseline it is not.</p>
+  </div>
+  <p class="small muted">NFE counts do not assume parallel execution, and NFEs alone do not establish equal wall-clock cost, especially when comparing forward sampling against guidance that requires backpropagation.</p>
+  <h3>Does the Monte Carlo budget have to grow with sequence length?</h3>
+  <p>Raw per-coordinate MAE is confounded by reward-gradient scale: when a sequence-level gradient is spread over more coordinates, both its per-coordinate magnitude and its absolute estimation error can fall. We therefore measure finite-sample convergence with pooled relative \(\ell_1\) error and cosine similarity against an independent GLASS reference built from 2,048 samples.</p>
+</section>
+
+<figure class="wide">
+  <div class="plate">
+    <img src="assets/dna_scaling.png" width="1800" height="1013" alt="A three-by-two grid of plots for GC target, motif and conjunction rewards. Top row: pooled relative L1 error falling with the number of posterior samples, with the four sequence-length curves from 50 to 400 bp interleaved rather than ordered by length. Bottom row: mean cosine similarity rising with posterior samples, again with lengths interleaved and the 400 bp curve at or above the 50 bp curve throughout.">
+  </div>
+  <figcaption><b>Finite-sample dMFM gradient estimation from 50 to 400 bp.</b> Top: pooled relative \(\ell_1\) error. Bottom: mean cosine similarity. Each estimate is compared with an independent GLASS-2048 reference, so the comparison measures dMFM estimator error against a Monte Carlo reference and cannot resolve below that reference's own spread. Conditioning states are obtained by integrating the base flow to \(t=0.5\).</figcaption>
+</figure>
+
+<section class="col stack">
+  <p>Both metrics improve with the number of posterior samples, and neither degrades systematically between 50 and 400 bp. We find no evidence that the parallel Monte Carlo budget must grow exponentially with sequence length — which is not a claim that a fixed budget suffices for arbitrary lengths.</p>
+  <p>We use \(N=8\) as the operating point for the DNA experiments. <strong>At that budget the estimate is directional rather than precise:</strong> the per-coordinate error is comparable to the gradient's own magnitude and agreement with the reference direction is weak. That is enough to steer, but it is not an accurate gradient, and larger budgets buy more fidelity.</p>
+</section>
+
+<section id="discussion" class="col stack">
+  <p class="eyebrow">Discussion</p>
+  <h2>What this changes, and what it does not</h2>
+  <p>The quality of the value estimate governs inference-time steering, and a flow map is what makes that estimate reachable. multiMFM recovers the value function roughly two orders of magnitude more accurately than the denoiser and one-step-map approximations it replaces, and it is precisely that estimator which then steers best per network call. On QM9 it attains the best reported error on five of the six properties while using a single reward-independent backbone, where the conditional baselines train one generator per property.</p>
+  <p>On GEOM-Drugs the approach carries to drug-sized molecules, where guidance clears the similarity metric's own random-pair floor by several times what the unguided generator manages. The reward's form matters more than its strength there: differentiating a relaxation of the reported metric, rather than a squared error on the same features, is what separates a result from a null.</p>
+  <div class="propbox">
+    <h3>Limits we want read with the results</h3>
+    <ul>
+      <li>Selection-based variants are scored by the guide, so only an independent oracle should be read as the result.</li>
+      <li>On DNA the finite-sample gradient at our operating budget is directional, not accurate.</li>
+      <li>The DNA oracle remains a learned predictor; nothing here establishes experimental biological validity.</li>
+      <li>Our molecular errors are computed under a stricter validity filter than the imported baselines, so the populations differ.</li>
+    </ul>
+  </div>
+  <p>Two findings cut against current practice rather than for our method: Feynman–Kac steering and Monte Carlo tree search, implemented faithfully and corrected, both reduce to independent sampling on these tasks. Reporting them as distinct baselines overstates what inference-time search contributes. The work opens avenues for applying dMFM and multiMFM steering to base models with higher intrinsic validity, and to larger-scale protein and DNA structure–sequence co-design.</p>
+</section>
+
+<section id="related" class="col stack">
+  <p class="eyebrow">Builds on</p>
+  <ul class="related">
+    <li><a href="https://openreview.net/forum?id=K5gV8Yptne" rel="noopener">Meta Flow Maps enable scalable reward alignment</a><span>Potaptchik et al., ICML 2026</span></li>
+    <li><a href="https://arxiv.org/abs/2604.09784" rel="noopener">Discrete Flow Maps</a><span>Potaptchik et al., 2026</span></li>
+    <li><a href="https://arxiv.org/abs/2509.25170" rel="noopener">GLASS Flows: efficient inference for reward alignment</a><span>Holderrieth et al., ICLR 2026</span></li>
+    <li><a href="https://openreview.net/forum?id=tAtpSwjsCB" rel="noopener">Diamond Maps: reward alignment via stochastic flow maps</a><span>Holderrieth et al., ICML 2026</span></li>
+    <li><a href="https://arxiv.org/abs/2501.14216" rel="noopener">TFG-Flow: training-free guidance in multimodal generative flow</a><span>Lin et al., ICLR 2025 — our molecular benchmark</span></li>
+    <li><a href="https://openreview.net/forum?id=Kg6CSrbXl4" rel="noopener">TABASCO: a fast, simplified model for molecular generation</a><span>Vonessen et al., TMLR 2026 — our base architecture</span></li>
+  </ul>
+</section>
+
+<section id="citation" class="col stack">
+  <p class="eyebrow">Citation</p>
+  <div class="bib">
+    <button class="copy" type="button" id="copy-bib">Copy</button>
+    <pre id="bibtex">@misc{unneberg2026multimfm,
+  title  = {Scalable Inference-time Steering in Biological Design
+            with Multimodal Meta Flow Maps},
+  author = {Unneberg, Ulrik and Wang, Shiyi and Franceschi, Dinko
+            and Xiong, Ziyu and Kozinsky, Boris and Zhong, Ellen D.
+            and Albergo, Michael S.},
+  year   = {2026},
+  note   = {Preprint}
+}</pre>
+  </div>
+</section>
+
+</main>
+
+<footer>
+  <div class="wide">
+    <h3>Acknowledgments</h3>
+    <p>UU and SW contributed equally and agreed their name may be exchanged. UU and BK acknowledge support from the NSF through the Harvard University Materials Research Science and Engineering Center Grant No. DMR-2011754 and by the NSF Harnessing the Data Revolution Big Idea under Grant No. 2118201. SW is supported by a Kempner Graduate Fellowship. MSA and SW are also supported by the National Science Foundation under Cooperative Agreement PHY-2525568 (<a href="http://iaifi.org/" rel="noopener">the NSF AI Institute for Artificial Intelligence and Fundamental Interactions</a>). This work has been made possible in part by a gift from the Chan Zuckerberg Initiative Foundation to establish the Kempner Institute for the Study of Natural and Artificial Intelligence. We thank Peter Potaptchik, Peter Holderrieth, Adhi Saravanan, Keith Matanachai and Donghae Lee for discussions that have been very helpful for this work.</p>
+    <p class="contact"><span>ulrikunneberg@g.harvard.edu</span><span>fwang@math.harvard.edu</span></p>
+  </div>
+</footer>
+
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js" integrity="sha384-XjKyOOlGwcjNTAIQHIpgOno0Hl1YQqzUOEleOLALmuqehneUG+vnGctmUb0ZY0l8" crossorigin="anonymous"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js" integrity="sha384-+VBxd3r6XgURycqtZ117nYw44OOcIax56Z4dCRWbxyPt0Koah1uHoK0o4+/RRE05" crossorigin="anonymous"></script>
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+  if (window.renderMathInElement) {
+    renderMathInElement(document.body, {
+      delimiters: [
+        { left: "\\[", right: "\\]", display: true },
+        { left: "\\(", right: "\\)", display: false }
+      ],
+      throwOnError: false
+    });
+  }
+
+  var btn = document.getElementById("copy-bib");
+  var pre = document.getElementById("bibtex");
+  if (btn && pre) {
+    btn.addEventListener("click", function () {
+      var done = function () {
+        btn.textContent = "Copied";
+        setTimeout(function () { btn.textContent = "Copy"; }, 1600);
+      };
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(pre.textContent).then(done, select);
+      } else {
+        select();
+      }
+      function select() {
+        var r = document.createRange();
+        r.selectNodeContents(pre);
+        var s = window.getSelection();
+        s.removeAllRanges();
+        s.addRange(r);
+        btn.textContent = "Press Ctrl/Cmd+C";
+        setTimeout(function () { btn.textContent = "Copy"; }, 2400);
+      }
+    });
+  }
+});
+</script>
+</body>
+</html>
