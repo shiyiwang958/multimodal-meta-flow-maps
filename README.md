@@ -16,7 +16,6 @@ assets/
   dna_schematic.png     Fig. 3  (figures/dMFM_cyclizability_schematic_final_1.png)
   geom_fingerprint.png          (figures/geom_fingerprint.pdf)
   qm9_nfe.png                   (figures/qm9_property_steering.pdf)
-  dna_scaling.png               (figures/dna_scaling_dmfm.pdf)
   og-image.jpg          1200x630 social preview
 ```
 
@@ -47,7 +46,7 @@ white border:
 
 ```sh
 cd /path/to/dMFM
-for f in norway fig geom_fingerprint qm9_property_steering dna_scaling_dmfm; do
+for f in norway fig geom_fingerprint qm9_property_steering; do
   pdftocairo -png -singlefile -r 300 figures/$f.pdf /tmp/hi_$f
 done
 convert /tmp/hi_norway.png -background white -alpha remove -fuzz 2% -trim +repage \
@@ -55,7 +54,8 @@ convert /tmp/hi_norway.png -background white -alpha remove -fuzz 2% -trim +repag
 ```
 
 Repeat with the matching output name for the others. Keep them in the 1800–2200 px range: the page
-renders at most 1088 px wide, so that covers HiDPI without bloating the page.
+renders at most 736 px wide, so that covers HiDPI without bloating the page. Each figure links to
+its own full-size image, which is why the sources are kept large.
 
 ## Notes
 
