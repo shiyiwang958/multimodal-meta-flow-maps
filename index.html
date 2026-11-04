@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Multimodal Meta Flow Maps</title>
-<meta name="description" content="Scalable inference-time steering in biological design with multimodal Meta Flow Maps: one reward-independent flow map per base generator steers DNA sequences and 3D molecules toward target properties.">
+<meta name="description" content="We adapt Meta Flow Maps to discrete (dMFM) and multimodal (multiMFM) biological design, and steer DNA sequences and molecules toward target properties using one reward-independent MFM per base generator.">
 <meta name="author" content="Ulrik Unneberg, Shiyi Wang, Dinko Franceschi, Ziyu Xiong, Boris Kozinsky, Ellen D. Zhong, Michael S. Albergo">
 <meta name="color-scheme" content="light dark">
 
@@ -201,7 +201,7 @@ footer h3 { font-size: 0.9rem; }
     </a>
     <ul class="navlinks">
       <li><a href="#overview">Overview</a></li>
-      <li><a href="#idea">Key idea</a></li>
+      <li><a href="#method">Method</a></li>
       <li><a href="#results">Results</a></li>
       <li><a href="#citation">BibTeX</a></li>
     </ul>
@@ -227,7 +227,7 @@ footer h3 { font-size: 0.9rem; }
     <span><sup>2</sup>Princeton University</span>
     <span><sup>3</sup>Kempner Institute</span>
     <span><sup>4</sup>IAIFI</span>
-    <span><sup>*</sup>Core contributors</span>
+    <span><sup>*</sup>Equal contribution</span>
   </p>
   <!-- Add the compiled PDF as paper.pdf next to this file, or point this at arXiv. -->
   <ul class="buttons">
@@ -248,37 +248,38 @@ footer h3 { font-size: 0.9rem; }
     <div class="plate">
       <a href="assets/teaser.jpg" title="Open full size" rel="noopener"><img src="assets/teaser.jpg" width="2000" height="571" alt="Four scatter panels of colored particles: Gaussian noise; the base model, a uniform square of red, white and blue points; the same distribution steered by a Norway-flag reward, which arranges the colors into the Norwegian flag; and steered by a smiley reward, which moves points into two colored eyes and a white mouth."></a>
     </div>
-    <figcaption>Each particle has a continuous position and a discrete color. The Norway reward steers color only and leaves the spatial distribution intact; the Smiley reward steers both together. The base model is untouched in each case.</figcaption>
+    <figcaption>Posterior guidance with a multimodal Meta Flow Map. \(p_0\) is the noise distribution and \(p_1\) is the base model distribution. Each particle has a continuous position and a discrete color. The Norway example steers only the colors, while the Smiley example steers both position and color.</figcaption>
   </figure>
   <h2>Overview</h2>
-  <p>Biological design is continuous (molecular structures), discrete (DNA residue types), and often both at once (protein structure–sequence co-design). Diffusion and CTMC-based methods handle multimodal generation, but adapting them at inference time to satisfy a design constraint remains hard.</p>
-  <p>We adapt <a href="https://openreview.net/forum?id=K5gV8Yptne" rel="noopener">Meta Flow Maps</a> to biological domains, developing the framework for discrete (<strong>dMFM</strong>) and multimodal (<strong>multiMFM</strong>) settings. One reward-independent flow map is distilled per base generator; any differentiable objective can then be applied at sampling time without retraining anything. We demonstrate it on DNA sequence design with a target mechanical property, and on molecular property design with QM9 and GEOM-Drugs.</p>
+  <p>Biological design problems can be continuous (e.g. molecular structures), discrete (e.g. DNA residue types), or both (e.g. protein structure–sequence co-design). Diffusion and CTMC-based methods have been developed for multimodal generation, but it remains challenging to adapt them at inference time to fulfill design constraints.</p>
+  <p><a href="https://openreview.net/forum?id=K5gV8Yptne" rel="noopener">Meta Flow Maps</a> (MFM) are one-step posterior samplers. They have shown high controllability for image generation because they give accurate estimates of reward gradients. We adapt Meta Flow Maps to biological domains and develop the framework in discrete (<strong>dMFM</strong>) and multimodal (<strong>multiMFM</strong>) settings. We use dMFM to design DNA sequences with a target mechanical property, and multiMFM trained on QM9 and GEOM-Drugs to design molecules with a given physical property. In both cases, steering improves target attainment using one reward-independent MFM per base generator.</p>
 </section>
 
 <section class="col stack">
   <h2>Motivation</h2>
-  <p>Molecular and sequence design rarely has one objective. A project wants validity, then binding affinity, then solubility, then some constraint nobody anticipated. Training a conditional generator for each specification makes experimentation slow.</p>
-  <p>Steering a fixed generator with a reward avoids that, and its accuracy comes down to one quantity: the value function \(V_t\), the expected reward of the finished object given a noisy intermediate state. Estimating it well means sampling the posterior over clean outputs consistent with that state. Existing methods either approximate the posterior with a point estimate, which is biased and cannot be improved by spending more compute, or simulate trajectories, which is expensive.</p>
+  <p>Molecular and sequence design tasks often require optimizing different combinations of objectives, such as validity, stability, binding affinity, activity, or constraint satisfaction. Training or fine-tuning a separate generative model for every new reward limits the rate of experimentation. Instead, we keep a base generator fixed and steer it with reward-guided inference, so that different objectives can be explored without retraining the generator.</p>
+  <p>Reward-guided sampling needs the gradient of the value function \(V_t(x_t) = \log \mathbb{E}\big[e^{r(X_1)} \mid X_t = x_t\big]\), which is an expectation over the posterior of clean samples given the current state. Methods such as DPS evaluate the reward at a single denoised estimate instead. This is biased, and the bias does not go away with more compute. A Meta Flow Map gives cheap samples from the posterior, so the expectation can be estimated directly.</p>
+  <p>Our main contributions are:</p>
   <div class="propbox">
     <ul>
-      <li><strong>multiMFM</strong> steers 3D molecular generation toward property targets with a single distilled map reused across objectives.</li>
-      <li>We formulate <strong>discrete GLASS posterior sampling</strong> and derive the discrete Meta Flow Map.</li>
-      <li>Combining the continuous and discrete maps gives <strong>mixed discrete–continuous steering</strong>.</li>
-      <li><strong>dMFM</strong> optimizes generated DNA sequences toward prescribed cyclizability values.</li>
+      <li>We construct <strong>multiMFM</strong> for small-molecule generation. It steers toward chemical-property targets with high accuracy, using a single distilled MFM that is reused across property objectives.</li>
+      <li>We formulate <strong>discrete GLASS posterior sampling</strong> and derive the discrete MFM.</li>
+      <li>We combine continuous and discrete MFMs into multiMFM for <strong>mixed discrete–continuous steering</strong>.</li>
+      <li><strong>dMFM</strong> optimizes generated DNA sequences at inference time toward prescribed predicted cyclizability values.</li>
     </ul>
   </div>
 </section>
 
-<section id="idea" class="col stack">
-  <h2>The key idea</h2>
-  <p>A Meta Flow Map is a one-step sampler that takes Gaussian noise to a draw from the posterior \(p_{1|t}(\cdot \mid x_t)\). Drawing \(N\) noises gives \(N\) look-aheads at the finished object, and so a Monte Carlo estimate of the reward gradient that steers the trajectory:</p>
+<section id="method" class="col stack">
+  <h2>Method</h2>
+  <p>A Meta Flow Map \(\Phi(\epsilon; t, x_t)\) sends Gaussian noise \(\epsilon\) to a sample of the posterior \(p_{1|t}(\cdot \mid x_t)\) in one step. Drawing \(N\) noises \(\epsilon_i\) and evaluating the map on each gives \(N\) posterior samples, and from these we form a Monte Carlo estimate of the value-function gradient:</p>
   <div class="eq">\[ \widehat{\nabla V}^{\,r}_t(x_t) = \nabla_x \log\left(\frac{1}{N}\sum_{i=1}^{N}\exp\big(r(\Phi(\epsilon_i;t,x_t))\big)\right) \]</div>
-  <p>Unlike a point estimate, this converges as \(N\) grows. We derive the discrete analogue by extending GLASS to categorical data on the simplex, where the map is distilled against the base denoiser, and combine the two into a joint map over \(x_t = (y_t, a_t)\) that steers coordinates and atom types with partial gradients of the same value function.</p>
+  <p>The MFM is distilled once from the base model and does not depend on the reward. For discrete data, we extend GLASS to sample \(p(x_1 \mid X_t = x_t)\) with an inner flow on the probability simplex. We then distill this inner flow into a dMFM, trained with a diagonal loss against the base denoiser plus a consistency loss. When the state has a continuous part \(y_t\) and a discrete part \(a_t\), multiMFM samples both jointly from \(p_{1|t}(y_1, a_1 \mid y_t, a_t)\). Each modality is then steered with its partial gradient of the same value function.</p>
   <figure>
     <div class="plate">
       <a href="assets/method.png" title="Open full size" rel="noopener"><img src="assets/method.png" width="1598" height="773" alt="Schematic of multimodal steering. On the left a continuous axis from a Gaussian prior to a multimodal data density; on the right a probability simplex with three vertices. A dashed black untilted trajectory and a solid red tilted trajectory run through both. From the current state, light gray fans of posterior look-ahead samples spread to the endpoint, where a reward evaluates them and sends gradients back as yellow arrows on each modality."></a>
     </div>
-    <figcaption><b>Steering with a multimodal Meta Flow Map.</b> From the current state, the map draws look-aheads from the joint posterior (light gray). The reward evaluates them and sends gradient signal back to tilt the trajectory (red) away from the unguided one (dashed). No independence between modalities is assumed.</figcaption>
+    <figcaption><b>Inference-time steering with a multimodal Meta Flow Map.</b> The unguided trajectory is dashed black. Conditioned on the current state \((t, y_t, a_t)\), multiMFM draws look-aheads from the joint posterior (light gray). The reward evaluates the look-aheads and sends gradient signal back to guide the path (red). No independence between modalities is assumed.</figcaption>
   </figure>
 </section>
 
@@ -288,32 +289,34 @@ footer h3 { font-size: 0.9rem; }
     <li>
       <span class="hl-tag">QM9, six properties</span>
       <span class="hl-num">5 of 6</span>
-      <span class="hl-text">best reported MAE among steering methods, from one backbone rather than one generator per property.</span>
+      <span class="hl-text">properties with the lowest MAE among steering methods, using one reward-independent backbone.</span>
     </li>
     <li>
-      <span class="hl-tag">Value estimate</span>
-      <span class="hl-num">~100&times;</span>
-      <span class="hl-text">lower error than the point estimates it replaces, and it keeps falling with budget.</span>
+      <span class="hl-tag">GEOM-Drugs, Tanimoto</span>
+      <span class="hl-num">0.276 <span class="from">from 0.229</span></span>
+      <span class="hl-text">mean similarity to the target fingerprint, counted directly from the generated molecules.</span>
     </li>
     <li>
       <span class="hl-tag">DNA, oracle MAE</span>
       <span class="hl-num">0.15 <span class="from">from 1.17</span></span>
-      <span class="hl-text">against a parent-disjoint oracle; 98% of paired samples improve.</span>
+      <span class="hl-text">at target cyclizability +1, scored by an oracle trained on disjoint parent sequences.</span>
     </li>
   </ul>
 
   <h3>DNA designed for a target mechanical property</h3>
-  <p>Intrinsic cyclizability, a proxy for DNA bendability, is sequence-encoded and carries regulatory information beyond motif content. We distill a dMFM from a base discrete flow model and steer 50-bp sequences toward a prescribed predicted value, guided by one regressor and evaluated by a second trained on disjoint parent sequences.</p>
-  <p>Guidance cuts oracle error from 1.174 to 0.153 at target \(y^\star{=}{+}1\), and from 0.833 to 0.117 at \(y^\star{=}{-}1\). Because the evaluator never saw the guide's training parents, the gain is not an artifact of scoring with the model being optimized. The guided errors sit near the oracle's own accuracy against measured values, so this shows guidance reaching the target region rather than resolving finer differences.</p>
+  <p>Sequence-encoded DNA mechanics can carry regulatory information beyond transcription-factor motif content. Intrinsic cyclizability, a proxy for DNA bendability, is sequence dependent, and promoter-proximal yeast nucleosome-depleted regions contain unusually low-cyclizability DNA (Basu et al., 2021). We train a base discrete flow model on DNA, distill it into a dMFM, and steer 50-bp sequences toward a target predicted cyclizability.</p>
+  <p>To keep guidance and evaluation separate, we train two cyclizability regressors on disjoint parent sequences: a guide, which is the only one differentiated during sampling, and an oracle, which is used only for evaluation. For each target we generate 1,000 guided–unguided pairs from the same initial noise. Guidance reduces oracle MAE from 1.174 to 0.153 at \(y^\star{=}{+}1\) and from 0.833 to 0.117 at \(y^\star{=}{-}1\). The mechanical properties of the designed sequences, and any regulatory effects, still need experimental validation.</p>
+  <p>We also test rewards whose target error can be computed exactly, without an oracle: a motif (TTTTTC) and a conjunction of two motifs (TTTTTC and AAAATT). With the same guidance hyperparameters for sequences of 50 to 400 bases, guidance improves 93–98% of matched pairs and preserves both sample uniqueness and Evo2 likelihood.</p>
   <figure>
     <div class="plate">
       <a href="assets/dna_schematic.png" title="Open full size" rel="noopener"><img src="assets/dna_schematic.png" width="2200" height="821" alt="Three-panel schematic. Left: a cyclizability objective with a bimodal distribution of predicted scores, a target value marked by a red arrow, and the squared-error reward. Middle: a reward-steered discrete flow, where per-position nucleotide distributions start near-uniform and become sharply peaked on single bases after reward-gradient tilting. Right: designed 50-bp sequences as colored bars with their predicted scores near the target."></a>
     </div>
-    <figcaption><b>Cyclizability-guided DNA design.</b> A guide predictor defines the terminal reward and supplies gradients; a parent-disjoint oracle, not shown, scores the result and is never used during guidance.</figcaption>
+    <figcaption><b>Cyclizability-guided DNA design.</b> A guide predictor defines the terminal reward and supplies gradients for sampling. Generated sequences are scored by a parent-disjoint oracle (not shown), which is never used during guidance. On 58 held-out parent sequences, the guide and oracle reach Pearson \(r \approx 0.88\) with MAE 0.16.</figcaption>
   </figure>
 
   <h3>Molecular property guidance</h3>
-  <p>For molecules the discrete modality is atom types and the continuous modality is coordinates. multiMFM beats the published TFG-Flow values on every property, and attains the best reported error on five of six. On top of it, <strong>steer-search</strong> keeps the best look-ahead the estimator has already computed instead of discarding it, which improves accuracy and validity at exactly zero additional generative-model calls.</p>
+  <p>For molecules, the discrete modality is atom types and the continuous modality is coordinates. Our base model is inspired by Tabasco, with the CTMC for atom types replaced by discrete flow matching from a Gaussian prior to the simplex. We model heavy atoms only and use the property-guidance setup of TFG-Flow. multiMFM has lower error than the published TFG-Flow values on every property, and the lowest error among steering methods on five of six. The baseline numbers were evaluated with RDKit validity, while ours use the stricter PoseBusters filter, which also checks bond lengths, angles, planarity, clashes and internal energy.</p>
+  <p>We also add <strong>steer-search</strong> (multiMFM-SS). At every guided step multiMFM already computes look-ahead estimates of the finished molecule. Steer-search keeps the best PoseBusters-valid look-ahead according to the guide, and returns it instead of the trajectory's endpoint. This costs no additional generative-model evaluations, lowers the error on four of the six properties, and raises PoseBusters validity from 90.2–92.5% to 96.2–98.5%.</p>
   <div class="table-wrap">
     <table>
       <thead>
@@ -337,26 +340,27 @@ footer h3 { font-size: 0.9rem; }
       </tbody>
     </table>
   </div>
-  <p class="small muted">QM9 mean absolute error, lower is better; energies in meV. Baselines reproduced from TFG-Flow. Our rows are means over replicate runs of 1,000 molecules. The full table, with every baseline and PoseBusters validity, is in the paper.</p>
+  <p class="small muted">QM9 mean absolute error (lower is better; energies in meV). Baseline values are reproduced from Table 1 of TFG-Flow. Our rows are means over replicate runs of 1,000 molecules each. The full table, with all baselines and PoseBusters validity, is in the paper.</p>
 
-  <p>The two panels below separate the method's premise from its consequence. A flow map makes the value function reachable by Monte Carlo, where a denoiser can only approximate it — and the estimator that recovers it is the one that steers best per network call.</p>
+  <h3>Comparison at matched inference cost</h3>
+  <p>On QM9 we compare against three inference-time methods that share our base generator, guide and held-out oracle: best-of-\(N\), Feynman–Kac steering, and DPS. Cost is counted in forward-equivalent network calls, and our backward pass is billed at its measured cost. The MFM estimates the value function from Monte Carlo samples, while the denoiser in DPS can only approximate it with a large bias. multiMFM is below every baseline at every budget, and its lead over DPS grows with the budget. multiMFM-SS reaches a given accuracy with about half the compute of best-of-\(N\).</p>
   <figure>
     <div class="plate">
       <a href="assets/qm9_nfe.png" title="Open full size" rel="noopener"><img src="assets/qm9_nfe.png" width="1800" height="749" alt="Two log-scale panels. Left: value-function error against function evaluations; FMAP and DPS are flat horizontal lines while multiMFM falls steadily by about two orders of magnitude. Right: oracle MAE against forward-equivalent calls per molecule; best-of-N and Feynman-Kac lie on top of each other, DPS flattens early, and multiMFM and multiMFM-SS run below all of them at every budget."></a>
     </div>
-    <figcaption><b>QM9 steering at matched inference cost.</b> <b>Left:</b> error in the estimated value function against the samples it is built from. The point estimates are flat by construction — no amount of compute improves a point estimate of an expectation. <b>Right:</b> held-out oracle MAE against forward-equivalent calls, with our backward pass billed at its measured cost.</figcaption>
+    <figcaption><b>QM9 property steering (polarizability \(\alpha\)) at matched inference cost.</b> <b>Left:</b> error in the estimated value function against the number of Monte Carlo samples; each sample is one network call. DPS and FMAP are deterministic point estimates, so they cannot improve with budget. The dotted line is the reference's own sampling noise. <b>Right:</b> held-out oracle MAE against forward-equivalent calls per molecule, with the guided methods billed for their backward pass.</figcaption>
   </figure>
-  <p class="small muted">One correction worth noting: implemented faithfully and gated on effective sample size, Feynman–Kac steering reduces to best-of-\(N\) here, as does MCTS on DNA, where the reward is terminal-only. The figure shows them superimposed rather than as distinct baselines.</p>
+  <p class="small muted">When the tuned temperature goes to zero on QM9, Feynman–Kac steering becomes best-of-\(N\). The figure shows both best-of-\(N\) and Feynman–Kac at non-zero temperature.</p>
 
-  <h3>Scaling to drug-sized molecules</h3>
-  <p>GEOM-Drugs reaches 71 heavy atoms against 9 for QM9. On the structural fingerprint task we differentiate a relaxation of the reported Tanimoto metric rather than a squared error on the same features, which is what separates a result from a null here. The metric needs a floor before it can be read: two <em>unrelated</em> real molecules already score about 0.22, because a path-based fingerprint rewards genericness.</p>
+  <h3>Drug-sized molecules (GEOM-Drugs)</h3>
+  <p>multiMFM scales to GEOM-Drugs molecules with up to 71 heavy atoms, compared with nine in QM9. Given a target fingerprint, we guide with a differentiable relaxation of the Tanimoto coefficient (TFG-Flow uses a squared error on the same fingerprints). For evaluation we count the fingerprints directly from the generated molecules, so no learned evaluator is involved.</p>
+  <p>Mean Tanimoto similarity should be read against a floor: two unrelated real molecules already share a similarity of about 0.22. Guidance raises the mean from 0.229 to 0.276 and increases the margin above the floor sixfold, while PoseBusters validity goes from 87.5% to 89.5%. Under TFG-Flow's 30-heavy-atom cap and scoring convention, multiMFM reaches 0.249, compared with TFG-Flow's published 0.208, which is just below that setting's floor of 0.210. Each result is averaged over three runs of 4,096 molecules.</p>
   <figure>
     <div class="plate">
       <a href="assets/geom_fingerprint.png" title="Open full size" rel="noopener"><img src="assets/geom_fingerprint.png" width="1800" height="691" alt="Two panels. Left: overlapping histograms of FP2 Tanimoto to target for unguided molecules in gray and multiMFM in red, with the guided distribution shifted right; a dashed line marks the random-pair floor. Right: a dot plot comparing TFG-Flow unconditional, TFG-Flow, our base generator and multiMFM under a 30-heavy-atom cap, with a shaded band at or below the floor containing both TFG-Flow points."></a>
     </div>
-    <figcaption><b>GEOM-Drugs fingerprint guidance.</b> The dashed line is the floor. <b>Left:</b> guidance shifts the whole distribution, not a tail; the unguided generator sits essentially on the floor. <b>Right:</b> repeated under TFG-Flow's 30-atom cap and scoring convention. Shading marks the region at or below that regime's floor.</figcaption>
+    <figcaption><b>GEOM-Drugs structural fingerprint guidance.</b> The dashed line is the floor, the FP2 Tanimoto similarity between two unrelated real molecules from the same pool. <b>Left:</b> per-molecule distributions over 12,288 generated molecules per arm, with guided and unguided samples sharing noise and targets; solid lines mark the means. <b>Right:</b> the same experiment under TFG-Flow's 30-heavy-atom cap and scoring convention. The shaded region is below the floor, and the value TFG-Flow reports for its guided model falls inside it.</figcaption>
   </figure>
-  <p>Guidance clears the floor by several times what the unguided generator manages, over three replicates of 4,096 molecules, and PoseBusters validity rises at the same time, so the gain is not bought with structural quality.</p>
 </section>
 
 <section id="citation" class="col stack">
