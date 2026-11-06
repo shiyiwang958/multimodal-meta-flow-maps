@@ -164,6 +164,9 @@ table { border-collapse: collapse; width: 100%; font-family: var(--f-display); f
 th, td { padding: 0.45rem 0.55rem; text-align: right; white-space: nowrap; }
 th:first-child, td:first-child { text-align: left; }
 thead th { font-weight: 600; vertical-align: bottom; border-bottom: 1px solid var(--ink); }
+thead th[colspan] { text-align: center; }
+thead th.ours { color: var(--crimson); }
+td.ours { background: var(--ours-bg); }
 tbody td { border-bottom: 1px solid var(--line); }
 tbody tr:last-child td { border-bottom: 0; }
 tr.ref td { color: var(--muted); }
@@ -312,17 +315,6 @@ footer h3 { font-size: 0.9rem; }
     </li>
   </ul>
 
-  <h3>DNA designed for a target mechanical property</h3>
-  <p>Sequence-encoded DNA mechanics can carry regulatory information beyond transcription-factor motif content. Intrinsic cyclizability, a proxy for DNA bendability, is sequence dependent, and promoter-proximal yeast nucleosome-depleted regions contain unusually low-cyclizability DNA (Basu et al., 2021). We train a base discrete flow model on DNA, distill it into a dMFM, and steer 50-bp sequences toward a target predicted cyclizability.</p>
-  <p>To keep guidance and evaluation separate and to prevent reward hacking, we train two cyclizability regressors on disjoint parent sequences: a guide, which is differentiated only during sampling, and an oracle, which is used only for evaluation. For each target we generate 1,000 guided–unguided pairs from the same initial noise. Guidance reduces oracle MAE from 1.174 to 0.153 at \(y^\star{=}{+}1\) and from 0.833 to 0.117 at \(y^\star{=}{-}1\).</p>
-  <p>We also test rewards whose target error can be computed exactly, without an oracle: a motif (TTTTTC) and a conjunction of two motifs (TTTTTC and AAAATT). With the same guidance hyperparameters for sequences of 50 to 400 bases, guidance improves 93–98% of matched pairs and preserves both sample uniqueness and Evo2 likelihood.</p>
-  <figure>
-    <div class="plate">
-      <a href="assets/dna_schematic.png" title="Open full size" rel="noopener"><img src="assets/dna_schematic.png" width="2200" height="821" alt="Three-panel schematic. Left: a cyclizability objective with a bimodal distribution of predicted scores, a target value marked by a red arrow, and the squared-error reward. Middle: a reward-steered discrete flow, where per-position nucleotide distributions start near-uniform and become sharply peaked on single bases after reward-gradient tilting. Right: designed 50-bp sequences as colored bars with their predicted scores near the target."></a>
-    </div>
-    <figcaption><b>Cyclizability-guided DNA design.</b> A guide predictor defines the terminal reward and supplies gradients for sampling. Generated sequences are scored by a parent-disjoint oracle (not shown), which is never used during guidance. On 58 held-out parent sequences, the guide and oracle reach Pearson \(r \approx 0.88\) with MAE 0.16.</figcaption>
-  </figure>
-
   <h3>Molecular property guidance</h3>
   <p>For molecules, the discrete modality is atom types and the continuous modality is coordinates. Our base model is inspired by Tabasco, with the CTMC for atom types replaced by discrete flow matching from a Gaussian prior to the simplex. We model heavy atoms only and use the property-guidance setup of TFG-Flow. multiMFM has lower error than the published TFG-Flow values on every property, and the lowest error among all inference-time methods on five of the six properties. The baseline numbers were evaluated with RDKit validity, while ours use the stricter PoseBusters filter, which also checks bond lengths, angles, planarity, clashes and internal energy.</p>
   <p>One can add the <strong>steer-search</strong> trick (multiMFM-SS) to multiMFM. At every guided step multiMFM already computes look-ahead estimates of the finished molecule. Steer-search keeps the best PoseBusters-valid look-ahead according to the guide, and returns it instead of the trajectory's endpoint. This costs no additional generative-model evaluations, lowers the error on four of the six properties, and raises PoseBusters validity from 90.2–92.5% to 96.2–98.5%.</p>
@@ -368,6 +360,39 @@ footer h3 { font-size: 0.9rem; }
       <a href="assets/geom_fingerprint.png" title="Open full size" rel="noopener"><img src="assets/geom_fingerprint.png" width="1800" height="691" alt="Two panels. Left: overlapping histograms of FP2 Tanimoto to target for unguided molecules in gray and multiMFM in red, with the guided distribution shifted right; a dashed line marks the random-pair floor. Right: a dot plot comparing TFG-Flow unconditional, TFG-Flow, our base generator and multiMFM under a 30-heavy-atom cap, with a shaded band at or below the floor containing both TFG-Flow points."></a>
     </div>
     <figcaption><b>GEOM-Drugs structural fingerprint guidance.</b> The dashed line is the floor, the FP2 Tanimoto similarity between two unrelated real molecules from the same pool. <b>Left:</b> per-molecule distributions over 12,288 generated molecules per arm, with guided and unguided samples sharing noise and targets; solid lines mark the means. <b>Right:</b> the same experiment under TFG-Flow's 30-heavy-atom cap and scoring convention. The shaded region is below the floor, and the value TFG-Flow reports for its guided model falls inside it. Scores under the floor are inconclusive whether guidance improves the similarity to target. </figcaption>
+  </figure>
+
+  <h3>DNA designed for a target mechanical property</h3>
+  <p>Sequence-encoded DNA mechanics can carry regulatory information beyond transcription-factor motif content. Intrinsic cyclizability, a proxy for DNA bendability, is sequence dependent, and promoter-proximal yeast nucleosome-depleted regions contain unusually low-cyclizability DNA (Basu et al., 2021). We train a base discrete flow model on DNA, distill it into a dMFM, and steer 50-bp sequences toward a target predicted cyclizability.</p>
+  <p>To keep guidance and evaluation separate and to prevent reward hacking, we train two cyclizability regressors on disjoint parent sequences: a guide, which is differentiated only during sampling, and an oracle, which is used only for evaluation. For each target we generate 1,000 guided–unguided pairs from the same initial noise. Guidance reduces oracle MAE from 1.174 to 0.153 at \(y^\star{=}{+}1\) and from 0.833 to 0.117 at \(y^\star{=}{-}1\).</p>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th scope="col" rowspan="2">Target \(y^\star\)</th>
+          <th scope="colgroup" colspan="2">Mean oracle score</th>
+          <th scope="colgroup" colspan="2">Oracle MAE ↓</th>
+        </tr>
+        <tr>
+          <th scope="col">Unguided</th>
+          <th scope="col" class="ours">Guided</th>
+          <th scope="col">Unguided</th>
+          <th scope="col" class="ours">Guided</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td>\(+1\)</td><td>−0.171</td><td class="ours">0.920</td><td>1.174</td><td class="ours best">0.153</td></tr>
+        <tr><td>\(-1\)</td><td>−0.171</td><td class="ours">−0.964</td><td>0.833</td><td class="ours best">0.117</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p class="small muted">Cyclizability of 50-bp sequences guided with dMFM, scored by the oracle. 1,000 guided–unguided pairs per target, with shared initial noise. The oracle is trained on parent sequences disjoint from the guide's and is never used during sampling. 95% confidence half-widths are at most 0.026.</p>
+  <p>We also test rewards whose target error can be computed exactly, without an oracle: a motif (TTTTTC) and a conjunction of two motifs (TTTTTC and AAAATT). With the same guidance hyperparameters for sequences of 50 to 400 bases, guidance improves 93–98% of matched pairs and preserves both sample uniqueness and Evo2 likelihood.</p>
+  <figure>
+    <div class="plate">
+      <a href="assets/dna_schematic.png" title="Open full size" rel="noopener"><img src="assets/dna_schematic.png" width="2200" height="821" alt="Three-panel schematic. Left: a cyclizability objective with a bimodal distribution of predicted scores, a target value marked by a red arrow, and the squared-error reward. Middle: a reward-steered discrete flow, where per-position nucleotide distributions start near-uniform and become sharply peaked on single bases after reward-gradient tilting. Right: designed 50-bp sequences as colored bars with their predicted scores near the target."></a>
+    </div>
+    <figcaption><b>Cyclizability-guided DNA design.</b> A guide predictor defines the terminal reward and supplies gradients for sampling. Generated sequences are scored by a parent-disjoint oracle (not shown), which is never used during guidance. On 58 held-out parent sequences, the guide and oracle reach Pearson \(r \approx 0.88\) with MAE 0.16.</figcaption>
   </figure>
 </section>
 
