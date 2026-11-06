@@ -246,9 +246,9 @@ footer h3 { font-size: 0.9rem; }
 <section id="overview" class="col stack">
   <figure>
     <div class="plate">
-      <a href="assets/teaser.jpg" title="Open full size" rel="noopener"><img src="assets/teaser.jpg" width="2000" height="571" alt="Four scatter panels of colored particles: Gaussian noise; the base model, a uniform square of red, white and blue points; the same distribution steered by a Norway-flag reward, which arranges the colors into the Norwegian flag; and steered by a smiley reward, which moves points into two colored eyes and a white mouth."></a>
+      <a href="fig1_geom/fig1_geom.pdf" title="Open full size" rel="noopener"><img src="fig1_geom/fig1_geom_web.png" width="2520" height="856" alt="Molecule drawings in four columns and three rows. The top row has four target molecules from GEOM-Drugs. The middle row has the base model's samples, which share little with their targets: Tanimoto similarity 0.11, 0.09, 0.28 and 0.17. The bottom row has the multiMFM samples from the same noise, which recover each target's ring system and linker: Tanimoto similarity 0.70, 0.68, 0.81 and 0.60. In every molecule the part it shares with the target is shaded."></a>
     </div>
-    <figcaption>Posterior guidance with a multimodal Meta Flow Map. \(p_0\) is the noise distribution and \(p_1\) is the base model distribution. Each particle has a continuous position and a discrete color. The Norway example steers only the colors, while the Smiley example steers both position and color.</figcaption>
+    <figcaption><b>Fingerprint-guided molecule generation on GEOM-Drugs.</b> Each column is one target. The FP2 fingerprint \(c\) of a GEOM-Drugs validation molecule (top) defines the reward \(r_c\). The base model (middle) and multiMFM (bottom) start from the same noise. The number under each molecule is the Tanimoto similarity between its fingerprint and \(c\), and the shading marks the largest substructure it shares with the target. We picked these four from the top 1% of 12,288 guided molecules. Over all of them, the mean similarity goes from 0.229 to 0.276.</figcaption>
   </figure>
   <h2>Overview</h2>
   <p>Biological design problems can be continuous (e.g. molecular structures), discrete (e.g. DNA residue types), or both (e.g. protein structure–sequence co-design). Diffusion and CTMC-based methods have been developed for multimodal generation, but it remains challenging to adapt them at inference time to fulfill design constraints.</p>
@@ -280,6 +280,15 @@ footer h3 { font-size: 0.9rem; }
       <a href="assets/method.png" title="Open full size" rel="noopener"><img src="assets/method.png" width="1598" height="773" alt="Schematic of multimodal steering. On the left a continuous axis from a Gaussian prior to a multimodal data density; on the right a probability simplex with three vertices. A dashed black untilted trajectory and a solid red tilted trajectory run through both. From the current state, light gray fans of posterior look-ahead samples spread to the endpoint, where a reward evaluates them and sends gradients back as yellow arrows on each modality."></a>
     </div>
     <figcaption><b>Inference-time steering with a multimodal Meta Flow Map.</b> The unguided trajectory is dashed black. Conditioned on the current state \((t, y_t, a_t)\), multiMFM draws look-aheads from the joint posterior (light gray). The reward evaluates the look-aheads and sends gradient signal back to guide the path (red). No independence between modalities is assumed.</figcaption>
+  </figure>
+
+  <h3>A toy example</h3>
+  <p>We also give a synthetic example. Each particle in the plane has a position and one of three colors, and the base model spreads the colors uniformly over a square. We steer the particles into a Norway flag or a smiley.</p>
+  <figure>
+    <div class="plate">
+      <a href="assets/teaser.jpg" title="Open full size" rel="noopener"><img src="assets/teaser.jpg" width="2000" height="571" alt="Four scatter panels of colored particles: Gaussian noise; the base model, a uniform square of red, white and blue points; the same distribution steered by a Norway-flag reward, which arranges the colors into the Norwegian flag; and steered by a smiley reward, which moves points into two colored eyes and a white mouth."></a>
+    </div>
+    <figcaption><b>Toy example.</b> Posterior guidance with a multimodal Meta Flow Map. \(p_0\) is the noise distribution and \(p_1\) is the base model distribution. Each particle has a continuous position and a discrete color. The Norway example steers only the colors, while the Smiley example steers both position and color.</figcaption>
   </figure>
 </section>
 
@@ -352,7 +361,7 @@ footer h3 { font-size: 0.9rem; }
   </figure>
 
   <h3>Drug-sized molecules (GEOM-Drugs)</h3>
-  <p>multiMFM scales to GEOM-Drugs molecules with up to 71 heavy atoms, compared with nine in QM9. Given a target fingerprint, we guide with a differentiable relaxation of the Tanimoto coefficient (TFG-Flow uses a squared error on the same fingerprints). For evaluation we count the fingerprints directly from the generated molecules, so no learned evaluator is involved.</p>
+  <p>multiMFM scales to GEOM-Drugs molecules with up to 71 heavy atoms, compared with nine in QM9. Given a target fingerprint, we guide with a differentiable relaxation of the Tanimoto coefficient (TFG-Flow uses a squared error on the same fingerprints). For evaluation we count the fingerprints directly from the generated molecules, so no learned evaluator is involved. Four examples are shown at the <a href="#overview">top of this page</a>.</p>
   <p>Mean Tanimoto similarity should be read against a floor: two unrelated real molecules already share a similarity of about 0.22. Guidance raises the mean from 0.229 to 0.276 and increases the margin above the floor sixfold, while PoseBusters validity goes from 87.5% to 89.5%. Under TFG-Flow's 30-heavy-atom cap and scoring convention, multiMFM reaches 0.249, compared with TFG-Flow's published 0.208. TFG-Flow's tanimoto similarity is below the setting's floor of 0.210. Each result is averaged over three runs of 4,096 molecules.</p>
   <figure>
     <div class="plate">
